@@ -1,6 +1,8 @@
 # --- For-Bot-Working --------- #
 pyrofork==2.3.45
 TgCrypto
+validators
+shortzy
 Pyromod==1.5
 # --- For-Database ------------ #
 pymongo
