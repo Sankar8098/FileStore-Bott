@@ -2,6 +2,7 @@ import os
 import asyncio
 import humanize
 from pyrogram import Client, filters
+from pyrogram.types import Message
 from pyrogram.enums import ParseMode
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from pyrogram.errors import FloodWait, UserIsBlocked, InputUserDeactivated
@@ -245,6 +246,45 @@ async def delete_files(messages, client, k):
               logging.error(f"Error editing the message: {e}")
         except Exception as e:
               logging.error(f"An unexpected error occurred: {e}")
+
+
+# Create a set to store banned user IDs
+banned_users = set()
+
+# Command to ban a user (Admin only)
+@Client.on_message(filters.command("ban") & filters.user(ADMIN_USER_ID))
+async def ban_user(client, message: Message):
+    if len(message.command) < 2:
+        await message.reply("Usage: /ban <user_id>")
+        return
+    try:
+        user_id = int(message.command[1])
+        banned_users.add(user_id)
+        await message.reply(f"User {user_id} has been banned.")
+    except ValueError:
+        await message.reply("Invalid user ID. Please provide a valid integer.")
+
+# Command to unban a user (Admin only)
+@Client.on_message(filters.command("unban") & filters.user(ADMIN_USER_ID))
+async def unban_user(client, message: Message):
+    if len(message.command) < 2:
+        await message.reply("Usage: /unban <user_id>")
+        return
+    try:
+        user_id = int(message.command[1])
+        banned_users.discard(user_id)
+        await message.reply(f"User {user_id} has been unbanned.")
+    except ValueError:
+        await message.reply("Invalid user ID. Please provide a valid integer.")
+
+# Middleware to block banned users
+@Client.on_message(filters.all)
+async def check_banned(client, message: Message):
+    if message.from_user.id in banned_users:
+        await message.reply("You are banned from using this bot.")
+        return
+    # Process the rest of the commands or messages here
+
             
 
 # Dont Remove Credit
