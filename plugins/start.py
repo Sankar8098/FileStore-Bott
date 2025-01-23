@@ -252,7 +252,7 @@ async def delete_files(messages, client, k):
 banned_users = set()
 
 # Define admin user IDs
-ADMIN_USER_ID = [123456789, 987654321]  # Replace with actual admin IDs
+ADMIN_USER_ID = [5821871362]  # Replace with actual admin IDs
 
 # Command to ban a user (Admin only)
 @Client.on_message(filters.command("ban") & filters.user(ADMIN_USER_ID))
