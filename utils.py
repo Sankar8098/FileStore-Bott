@@ -1,6 +1,5 @@
 import logging
 from pyrogram.errors import InputUserDeactivated, UserNotParticipant, FloodWait, UserIsBlocked, PeerIdInvalid
-from imdb import Cinemagoer
 import asyncio
 from pyrogram.types import Message
 from pyrogram import enums
