@@ -2,7 +2,7 @@ import os
 import asyncio
 import humanize
 from pyrogram import Client, filters
-from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram.enums import ParseMode
 from pyrogram.errors import FloodWait, UserIsBlocked, InputUserDeactivated
 from bot import Bot
@@ -14,18 +14,59 @@ from database.database import add_user, del_user, full_userbase, present_user
 titanxofficials = FILE_AUTO_DELETE
 file_auto_delete = humanize.naturaldelta(titanxofficials)
 banned_users = set()  # Set to store banned user IDs
-ADMIN_USER_ID = [5821871362]  # Replace with the actual admin IDs
+ADMIN_USER_ID = [5821871362]  # Replace with actual admin IDs
+
+
+# Middleware to Block Banned Users
+@Bot.on_message(filters.private & ~filters.user(ADMIN_USER_ID))
+async def block_banned_users(client: Client, message: Message):
+    if message.from_user.id in banned_users:
+        await message.reply("You are banned from using this bot.")
+        return
+
+
+# Ban Command
+@Bot.on_message(filters.command("ban") & filters.user(ADMIN_USER_ID))
+async def ban_user(client, message):
+    if len(message.command) < 2:
+        await message.reply("Usage: /ban <user_id>")
+        return
+    try:
+        user_id = int(message.command[1])
+        banned_users.add(user_id)
+        await message.reply(f"User {user_id} has been banned.")
+    except ValueError:
+        await message.reply("Invalid user ID. Please provide a valid integer.")
+
+
+# Unban Command
+@Bot.on_message(filters.command("unban") & filters.user(ADMIN_USER_ID))
+async def unban_user(client, message):
+    if len(message.command) < 2:
+        await message.reply("Usage: /unban <user_id>")
+        return
+    try:
+        user_id = int(message.command[1])
+        banned_users.discard(user_id)
+        await message.reply(f"User {user_id} has been unbanned.")
+    except ValueError:
+        await message.reply("Invalid user ID. Please provide a valid integer.")
 
 
 # Start Command
 @Bot.on_message(filters.command("start") & filters.private & subscribed)
 async def start_command(client: Client, message: Message):
+    if message.from_user.id in banned_users:
+        await message.reply("You are banned from using this bot.")
+        return
+
     id = message.from_user.id
     if not await present_user(id):
         try:
             await add_user(id)
         except:
             pass
+
     text = message.text
     if len(text) > 7:
         try:
@@ -55,7 +96,7 @@ async def start_command(client: Client, message: Message):
                 ids = [int(int(argument[1]) / abs(client.db_channel.id))]
             except:
                 return
-        temp_msg = await message.reply("Wait Bro...")
+        temp_msg = await message.reply("Wait...")
         try:
             messages = await get_messages(client, ids)
         except:
@@ -116,8 +157,8 @@ async def start_command(client: Client, message: Message):
         reply_markup = InlineKeyboardMarkup(
             [
                 [
-                    InlineKeyboardButton("🧠 ʜᴇʟᴘ", callback_data="help"),
-                    InlineKeyboardButton("🔰 ᴀʙᴏᴜᴛ", callback_data="about"),
+                    InlineKeyboardButton("🧠 Help", callback_data="help"),
+                    InlineKeyboardButton("🔰 About", callback_data="about"),
                 ]
             ]
         )
@@ -132,43 +173,6 @@ async def start_command(client: Client, message: Message):
             ),
             reply_markup=reply_markup,
         )
-        return
-
-
-# Ban Command
-@Bot.on_message(filters.command("ban") & filters.user(ADMIN_USER_ID))
-async def ban_user(client, message):
-    if len(message.command) < 2:
-        await message.reply("Usage: /ban <user_id>")
-        return
-    try:
-        user_id = int(message.command[1])
-        banned_users.add(user_id)
-        await message.reply(f"User {user_id} has been banned.")
-    except ValueError:
-        await message.reply("Invalid user ID. Please provide a valid integer.")
-
-
-# Unban Command
-@Bot.on_message(filters.command("unban") & filters.user(ADMIN_USER_ID))
-async def unban_user(client, message):
-    if len(message.command) < 2:
-        await message.reply("Usage: /unban <user_id>")
-        return
-    try:
-        user_id = int(message.command[1])
-        banned_users.discard(user_id)
-        await message.reply(f"User {user_id} has been unbanned.")
-    except ValueError:
-        await message.reply("Invalid user ID. Please provide a valid integer.")
-
-
-# Middleware to Block Banned Users
-@Bot.on_message(filters.private)
-async def check_banned(client, message):
-    if message.from_user.id in banned_users:
-        await message.reply("You are banned from using this bot.")
-        return
 
 
 # Delete Files
@@ -178,10 +182,10 @@ async def delete_files(messages, client, k):
         try:
             await client.delete_messages(chat_id=msg.chat.id, message_ids=[msg.id])
         except Exception as e:
-            print(f"The attempt to delete the media {msg.id} was unsuccessful: {e}")
+            print(f"Failed to delete the media {msg.id}: {e}")
 
     try:
-        await k.edit_text("Your Video / File Is Successfully Deleted ✅")
+        await k.edit_text("Your Video / File Has Been Deleted ✅")
     except Exception as e:
         print(f"Error editing the message: {e}")
-                
+
